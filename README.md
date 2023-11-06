@@ -25,5 +25,5 @@ Implement the interface **\GSAToken\TokenCache** to cache the access token. The 
 The implementation has been tested in php 5.6 and 8.2. Two shell scripts are included to run php cli via docker. This way no need to install php locally. You need docker installed and then pull the php images referenced in the files or you may change to any version you want. Then run:
 
 ```
-$ ./php56-cli test.php
+$ ./php56-cli.sh test.php
 ```
