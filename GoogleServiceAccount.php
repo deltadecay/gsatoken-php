@@ -250,6 +250,23 @@ class DefaultHttpClient implements HttpClient
 			$context = stream_context_create($opts);
 			$response = file_get_contents($url, false, $context);
 			preg_match('/([0-9])\d+/', $http_response_header[0], $matches);
+			//print_r($http_response_header);
+			// Array
+			// (
+			// 	[0] => HTTP/1.0 200 OK
+			// 	[1] => Content-Type: application/json; charset=UTF-8
+			// 	[2] => Vary: X-Origin
+			// 	[3] => Vary: Referer
+			// 	[4] => Date: Mon, 06 Nov 2023 10:18:41 GMT
+			// 	[5] => Server: scaffolding on HTTPServer2
+			// 	[6] => Cache-Control: private
+			// 	[7] => X-XSS-Protection: 0
+			// 	[8] => X-Frame-Options: SAMEORIGIN
+			// 	[9] => X-Content-Type-Options: nosniff
+			// 	[10] => Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+			// 	[11] => Accept-Ranges: none
+			// 	[12] => Vary: Origin,Accept-Encoding
+			// )
 			$httpcode = intval($matches[0]);
 			$err = ($response === false);
 		}

@@ -23,6 +23,10 @@ class FileTokenCache implements \GSAToken\TokenCache
 		$this->mac_key = base64_decode(SECONDKEY); 
 	}
 
+	// Set passphrases for the encryption and hmac when storing the token on disk
+	// Eg. Generate keys with
+	// enc_key = openssl_random_pseudo_bytes(32);
+	// mac_key = openssl_random_pseudo_bytes(64);
 	public function setPassphrase($enc_key, $mac_key)
 	{
 		$this->enc_key = $enc_key;
@@ -41,7 +45,7 @@ class FileTokenCache implements \GSAToken\TokenCache
             $data = file_get_contents($this->cache_filename);
             if($data !== FALSE)
             {
-				$data = $this->secured_decrypt($data);
+				$data = $this->decrypt($data);
 				if($data !== FALSE) {
                 	$this->cached_token = json_decode($data, TRUE);
 				}	
@@ -60,7 +64,7 @@ class FileTokenCache implements \GSAToken\TokenCache
 		if($this->cache_filename != null && $token != null)
 		{
 			$data = json_encode($token);
-			$data = $this->secured_encrypt($data);
+			$data = $this->encrypt($data);
 			file_put_contents($this->cache_filename, $data);
 		}
 	}
@@ -71,7 +75,7 @@ class FileTokenCache implements \GSAToken\TokenCache
 		return $this->cached_token!=null && $now < ($this->cached_token['expires_at']);
 	}
 
-	private function secured_encrypt($data)
+	private function encrypt($data)
 	{			
 		$method = "aes-256-cbc";    
 		$iv_length = openssl_cipher_iv_length($method);
@@ -80,21 +84,20 @@ class FileTokenCache implements \GSAToken\TokenCache
 		$data_encrypted = openssl_encrypt($data, $method, $this->enc_key, OPENSSL_RAW_DATA, $iv); 
 		// Note! hmac output is binary, thus the length is half compared to hex output   
 		$mac = hash_hmac('sha512', $data_encrypted, $this->mac_key, TRUE);
-					
-		$output = base64_encode($iv.$mac.$data_encrypted);    
+		$bundle = $iv.$mac.$data_encrypted;
+		$output = base64_encode($bundle);    
 		return $output;        
 	}
 
-	private function secured_decrypt($input)
+	private function decrypt($input)
 	{          
-		$mix = base64_decode($input);
-				
+		$bundle = base64_decode($input);
 		$method = "aes-256-cbc";    
 		$iv_length = openssl_cipher_iv_length($method);
 					
-		$iv = substr($mix, 0, $iv_length);
-		$mac = substr($mix, $iv_length, 64);
-		$data_encrypted = substr($mix, $iv_length + 64);
+		$iv = substr($bundle, 0, $iv_length);
+		$mac = substr($bundle, $iv_length, 64);
+		$data_encrypted = substr($bundle, $iv_length + 64);
 					
 		$data = openssl_decrypt($data_encrypted, $method, $this->enc_key, OPENSSL_RAW_DATA, $iv);
 		$mac_new = hash_hmac('sha512', $data_encrypted, $this->mac_key, TRUE);
