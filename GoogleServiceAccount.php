@@ -1,5 +1,6 @@
 <?php
 
+namespace GSAToken;
 
 interface JWTFactory
 {

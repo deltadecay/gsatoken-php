@@ -6,7 +6,7 @@ define('FIRSTKEY','2UOAWCTfPQqXBeAkH/c894dmbsqtTP4VRNny3czRjMU=');
 // echo base64_encode(openssl_random_pseudo_bytes(64));
 define('SECONDKEY','3SNAAJRV+mhuS2odAAIp1zWNhgsK/Ycr6hTjfzDyyQBngmOInVAd7axRqWXRC0KPBXmiVgaFfHV6j0Zv+dKHng==');
 
-class FileTokenCache implements TokenCache
+class FileTokenCache implements \GSAToken\TokenCache
 {
 	private $cached_token = null;
 	private $cache_filename = null;

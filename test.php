@@ -5,7 +5,7 @@ require_once("GoogleServiceAccount.php");
 require_once("JWT.php");
 require_once("FileTokenCache.php");
 
-class JWTCreator implements JWTFactory
+class JWTCreator implements \GSAToken\JWTFactory
 {
     public function create($header, $claims, $secretkey)
     {
@@ -22,7 +22,7 @@ $configfile = __DIR__."/serviceaccount.json";
 // Name of a file where to store the cached token
 $cachefile = __DIR__."/accesstoken.cache";
 
-$gsa = new GoogleServiceAccount($configfile);
+$gsa = new \GSAToken\GoogleServiceAccount($configfile);
 $tokencache = new FileTokenCache($cachefile);
 
 // echo base64_encode(openssl_random_pseudo_bytes(32));
@@ -36,6 +36,7 @@ $gsa->setJWTFactory(new JWTCreator());
 
 $token = $gsa->fetchAccessToken($scopes);
 $accesstoken = $token['access_token'];
+$token['expires_in'] = $token['expires_at'] - time();
 print_r($token);
 
 /*
