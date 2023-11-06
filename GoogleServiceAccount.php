@@ -57,7 +57,7 @@ class GoogleServiceAccount
 		$this->tokenCache = new DefaultMemoryTokenCache();
 		$this->tokenCache->load();
 		$this->httpClient = new DefaultHttpClient();
-        $this->loadServiceAccountConfig($configFilename);
+		$this->loadServiceAccountConfig($configFilename);
 	}
 
 	public function getJWTFactory()

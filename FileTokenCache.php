@@ -41,7 +41,7 @@ class FileTokenCache implements \GSAToken\TokenCache
 	public function load()
 	{
 		if($this->cache_filename!=null && is_file($this->cache_filename))
-        {
+		{
 			$data = file_get_contents($this->cache_filename);
 			if($data !== FALSE)
 			{
