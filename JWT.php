@@ -70,7 +70,7 @@ function signJWT($data, $secretkey, $alg)
 	{
 		throw new \Exception('Unsupported signing method. Supported HS, RS, ES with 256, 384, 512 hashing.');
 	}
-    return $signature;
+	return $signature;
 }
 
 function createJWT($header, $claims, $secretkey, $alg = null)
