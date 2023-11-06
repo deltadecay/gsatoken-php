@@ -40,16 +40,16 @@ class GoogleServiceAccount
 {
 	const TOKEN_URI = "https://oauth2.googleapis.com/token";
 
-    // The service account configuration
-    private $sa = array();
+	// The service account configuration
+	private $sa = array();
 
 	private $jwtfactory = null;
 	private $tokenCache = null;
 	private $httpClient = null;
 
 
-    public function __construct($configFilename = null)
-    {   
+	public function __construct($configFilename = null)
+	{
 		if($configFilename == null) 
 		{
 			throw new \Exception('configFilename is null');
@@ -58,7 +58,7 @@ class GoogleServiceAccount
 		$this->tokenCache->load();
 		$this->httpClient = new DefaultHttpClient();
         $this->loadServiceAccountConfig($configFilename);
-    }   
+	}
 
 	public function getJWTFactory()
 	{
@@ -99,33 +99,33 @@ class GoogleServiceAccount
 		return $this->sa;
 	}
 
-    public function loadServiceAccountConfig($configFilename)
-    {       
-        $contents = file_get_contents($configFilename);
-        $this->sa = json_decode($contents, TRUE);
-    }      
+	public function loadServiceAccountConfig($configFilename)
+	{
+		$contents = file_get_contents($configFilename);
+		$this->sa = json_decode($contents, TRUE);
+	}
 
 
-    // scopes is an array of the scopes to fetch token for. eg. array("https://www.googleapis.com/auth/firebase.messaging") 
-    //
-    // On success returns an assoc.array with fields:
-    // Array
-    // (
-    //     [access_token] => ya29.c......
-    //     [expires_in] => 3599
-    //     [token_type] => Bearer
-    // )
-    //
-    // On failure an example of error. See https://developers.google.com/identity/protocols/oauth2/service-account#error-codes
-    // Array
-    // (
-    //     [error] => invalid_grant
-    //     [error_description] => Invalid JWT Signature.
-    // )
+	// scopes is an array of the scopes to fetch token for. eg. array("https://www.googleapis.com/auth/firebase.messaging") 
+	//
+	// On success returns an assoc.array with fields:
+	// Array
+	// (
+	//     [access_token] => ya29.c......
+	//     [expires_in] => 3599
+	//     [token_type] => Bearer
+	// )
+	//
+	// On failure an example of error. See https://developers.google.com/identity/protocols/oauth2/service-account#error-codes
+	// Array
+	// (
+	//     [error] => invalid_grant
+	//     [error_description] => Invalid JWT Signature.
+	// )
 	// returns false if something failed in the network request.
-    public function fetchAccessToken($scopes)
-    {
-        $now = time();
+	public function fetchAccessToken($scopes)
+	{
+		$now = time();
 
 		if($this->getTokenCache() && $this->getTokenCache()->isValid($now))
 		{
@@ -157,29 +157,29 @@ class GoogleServiceAccount
 
 		# https://developers.google.com/identity/protocols/oauth2/service-account#httprest_1
 		# https://developers.google.com/identity/protocols/oauth2/service-account#authorizingrequests
-        $header = array("alg" => "RS256", "typ" => "JWT", "kid" => $sa['private_key_id']);
-        $claims = array(
-                "iss" => $sa['client_email'],
-                "scope" => implode(" ", $scopes),
-                "aud" => "https://oauth2.googleapis.com/token",
-                "exp" => $now + 3600,
-                "iat" => $now,
-                );
-        
-        $privkey = $sa['private_key'];
+		$header = array("alg" => "RS256", "typ" => "JWT", "kid" => $sa['private_key_id']);
+		$claims = array(
+				"iss" => $sa['client_email'],
+				"scope" => implode(" ", $scopes),
+				"aud" => "https://oauth2.googleapis.com/token",
+				"exp" => $now + 3600,
+				"iat" => $now,
+				);
+		
+		$privkey = $sa['private_key'];
 
 		if(!$this->getJWTFactory()) 
 		{
 			throw new \Exception('JWT factory not set');
 		}
-        $jwt = $this->getJWTFactory()->create($header, $claims, $privkey);
+		$jwt = $this->getJWTFactory()->create($header, $claims, $privkey);
 
-        $oauthdata = array(
-            "grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer",
-            "assertion" => $jwt,
-            );
-    
-        $postData = http_build_query($oauthdata);
+		$oauthdata = array(
+			"grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer",
+			"assertion" => $jwt,
+			);
+
+		$postData = http_build_query($oauthdata);
 
 		$httpHeaders = array("Content-Type: application/x-www-form-urlencoded");
 		
@@ -190,10 +190,10 @@ class GoogleServiceAccount
 
 		list($response, $httpcode, $err) = $this->getHttpClient()->request("POST", $oath_token_url, $httpHeaders, $postData);
 
-        $token = false;
-        if(!$err)
-        {
-            $token = json_decode($response, TRUE);
+		$token = false;
+		if(!$err)
+		{
+			$token = json_decode($response, TRUE);
 			if(isset($token['access_token']) && isset($token['expires_in']))
 			{
 				// Add a field with a timestamp when the token expires at, decrease by 60 sec to add some margin
@@ -204,9 +204,9 @@ class GoogleServiceAccount
 			{
 				$this->getTokenCache()->save($token);
 			}
-        }
-        return $token;
-    }
+		}
+		return $token;
+	}
 
 }
 

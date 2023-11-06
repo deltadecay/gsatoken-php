@@ -2,12 +2,12 @@
 
 function base64url_encode($data)
 {
-    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+	return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
 function base64url_decode($data)
 {
-    return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', 3 - (3 + strlen( $data )) % 4 ));
+	return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', 3 - (3 + strlen( $data )) % 4 ));
 }
 
 // Create a signature for the unsigned JWT. 
@@ -19,7 +19,7 @@ function signJWT($data, $secretkey, $alg)
 {
 	if(strlen($alg) != 5) 
 	{
-        throw new \Exception('alg should be five chars, eg. RS256');
+		throw new \Exception('alg should be five chars, eg. RS256');
 	}
 	$enc = substr($alg, 0, 2);
 	$len = substr($alg, 2);
@@ -89,9 +89,9 @@ function createJWT($header, $claims, $secretkey, $alg = null)
 // Get the value of a the specified field from the Claims section of the JWT
 function getJWTClaimsField($jwt, $field)
 {
-    $parts = explode(".", $jwt);
-    $claims_str = base64url_decode($parts[1]);
-    $claims = json_decode($claims_str, TRUE);
-    return $claims[$field];
+	$parts = explode(".", $jwt);
+	$claims_str = base64url_decode($parts[1]);
+	$claims = json_decode($claims_str, TRUE);
+	return $claims[$field];
 }
 

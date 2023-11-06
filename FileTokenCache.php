@@ -42,19 +42,20 @@ class FileTokenCache implements \GSAToken\TokenCache
 	{
 		if($this->cache_filename!=null && is_file($this->cache_filename))
         {
-            $data = file_get_contents($this->cache_filename);
-            if($data !== FALSE)
-            {
+			$data = file_get_contents($this->cache_filename);
+			if($data !== FALSE)
+			{
 				$data = $this->decrypt($data);
-				if($data !== FALSE) {
-                	$this->cached_token = json_decode($data, TRUE);
+				if($data !== FALSE) 
+				{
+					$this->cached_token = json_decode($data, TRUE);
 				}	
-            }
-            else
-            {
-                $this->cached_token = null;
-            }
-        }
+			}
+			else
+			{
+				$this->cached_token = null;
+			}
+		}
 	}
 
 	// Save the token to file on disk
