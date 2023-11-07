@@ -33,11 +33,11 @@ $tokencache->setPassphrase($enc_key, $mac_key);
 $gsa->setTokenCache($tokencache);
 $gsa->setJWTFactory(new JWTCreator());
 
-
-$token = $gsa->fetchAccessToken($scopes);
-$accesstoken = $token['access_token'];
-$token['expires_in'] = $token['expires_at'] - time();
-print_r($token);
+$now = time();
+$ret = $gsa->fetchAccessToken($scopes);
+$accesstoken = $ret['access_token'];
+$ret['expires_in'] = $ret['expires_at'] > $now ? $ret['expires_at'] - $now : 0;
+print_r($ret);
 
 /*
 Array

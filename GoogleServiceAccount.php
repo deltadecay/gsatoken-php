@@ -26,7 +26,7 @@ interface TokenCache
 interface HttpClient 
 {
 	// Perform a http request
-	// Should return array($responsebody, $httpcode, $error)
+	// Should return array($responsebody, $httpcode, $responseheaders, $error)
 	public function request($method, $url, $headers, $postdata);
 }
 
@@ -42,7 +42,6 @@ class GoogleServiceAccount
 
 	// The service account configuration
 	private $sa = array();
-
 	private $jwtfactory = null;
 	private $tokenCache = null;
 	private $httpClient = null;
@@ -50,8 +49,7 @@ class GoogleServiceAccount
 
 	public function __construct($configFilename = null)
 	{
-		if($configFilename == null) 
-		{
+		if ($configFilename == null) {
 			throw new \Exception('configFilename is null');
 		}
 		$this->tokenCache = new DefaultMemoryTokenCache();
@@ -78,8 +76,7 @@ class GoogleServiceAccount
 	public function setTokenCache(TokenCache $tokenCache)
 	{
 		$this->tokenCache = $tokenCache;
-		if($this->tokenCache) 
-		{
+		if ($this->tokenCache) {
 			$this->tokenCache->load();
 		}
 	}
@@ -127,31 +124,25 @@ class GoogleServiceAccount
 	{
 		$now = time();
 
-		if($this->getTokenCache() && $this->getTokenCache()->isValid($now))
-		{
+		if ($this->getTokenCache() && $this->getTokenCache()->isValid($now)) {
 			return $this->getTokenCache()->getToken();
 		}
 
-		if(is_string($scopes))
-		{
+		if (is_string($scopes)) {
 			$scopes = array($scopes);
 		}
 
 		$sa = $this->getServiceAccountConfig();
 		$oath_token_url = isset($sa['token_uri']) ? $sa['token_uri'] : self::TOKEN_URI;
-
 		// fields used from the service account:
 		// token_uri, client_email, private_key_id, private_key
-		if(!isset($sa['client_email']))
-		{
+		if (!isset($sa['client_email'])) {
 			throw new \Exception('client_email in service account config not set');
 		}
-		if(!isset($sa['private_key_id']))
-		{
+		if (!isset($sa['private_key_id'])) {
 			throw new \Exception('private_key_id in service account config not set');
 		}
-		if(!isset($sa['private_key']))
-		{
+		if (!isset($sa['private_key'])) {
 			throw new \Exception('private_key in service account config not set');
 		}
 
@@ -159,17 +150,16 @@ class GoogleServiceAccount
 		# https://developers.google.com/identity/protocols/oauth2/service-account#authorizingrequests
 		$header = array("alg" => "RS256", "typ" => "JWT", "kid" => $sa['private_key_id']);
 		$claims = array(
-				"iss" => $sa['client_email'],
-				"scope" => implode(" ", $scopes),
-				"aud" => "https://oauth2.googleapis.com/token",
-				"exp" => $now + 3600,
-				"iat" => $now,
-				);
+			"iss" => $sa['client_email'],
+			"scope" => implode(" ", $scopes),
+			"aud" => "https://oauth2.googleapis.com/token",
+			"exp" => $now + 3600,
+			"iat" => $now,
+		);
 		
 		$privkey = $sa['private_key'];
 
-		if(!$this->getJWTFactory()) 
-		{
+		if (!$this->getJWTFactory()) {
 			throw new \Exception('JWT factory not set');
 		}
 		$jwt = $this->getJWTFactory()->create($header, $claims, $privkey);
@@ -177,37 +167,64 @@ class GoogleServiceAccount
 		$oauthdata = array(
 			"grant_type" => "urn:ietf:params:oauth:grant-type:jwt-bearer",
 			"assertion" => $jwt,
-			);
+		);
 
 		$postData = http_build_query($oauthdata);
 
 		$httpHeaders = array("Content-Type: application/x-www-form-urlencoded");
 		
-		if(!$this->getHttpClient())
-		{
+		if (!$this->getHttpClient()) {
 			throw new \Exception('http client not set');
 		}
 
-		list($response, $httpcode, $err) = $this->getHttpClient()->request("POST", $oath_token_url, $httpHeaders, $postData);
+		list($responsebody, $httpcode, $responseheaders, $err) = $this->getHttpClient()->request("POST", $oath_token_url, $httpHeaders, $postData);
 
-		$token = false;
-		if(!$err)
-		{
-			$token = json_decode($response, TRUE);
-			if(isset($token['access_token']) && isset($token['expires_in']))
-			{
-				// Add a field with a timestamp when the token expires at, decrease by 60 sec to add some margin
-				$token['expires_at'] = time() + $token['expires_in'] - 60;
-			}
+		$retryAfterTs = $this->getRetryAfterTimestamp($responseheaders['retry-after']);
+
+		$ret = false;
+		if (!$err) {
+			$json = json_decode($responsebody, TRUE);
 			
-			if($this->getTokenCache()) 
-			{
-				$this->getTokenCache()->save($token);
+
+			if (!isset($json['error']) && isset($json['access_token']) && isset($json['expires_in'])) {
+				// Add a field with a timestamp when the token expires at, decrease by 60 sec to add some margin
+				$json['expires_at'] = time() + $json['expires_in'] - 60;
+
+				if ($this->getTokenCache()) {
+					$this->getTokenCache()->save($json);
+				}	
 			}
+
+			if (isset($json['error'])) {
+				$json['httpcode'] = $httpcode;
+				$json['headers'] = $responseheaders;
+			}
+			$ret = $json;
+		} else {
+			$json = array();
+			$json['httpcode'] = $httpcode;
+			$json['headers'] = $responseheaders;
+			$json['error'] = $err;
+			$ret = $json;
 		}
-		return $token;
+		return $ret;
 	}
 
+	private function getRetryAfterTimestamp($retryAfter, $now = null) 
+	{
+		$ts = false;
+		$now = $now !== null ? $now : time();
+		if (isset($retryAfter) && $retryAfter != null) {
+			if (is_numeric($retryAfter)) {
+				// If value is numeric, then it is seconds
+				$ts = $now + intval($retryAfter);
+			} else {
+				// If not, then it is a HTTP date
+				$ts = strtotime($retryAfter);
+			}
+		} 
+		return $ts;
+	}
 }
 
 
@@ -215,12 +232,13 @@ class DefaultHttpClient implements HttpClient
 {
 	public function request($method, $url, $headers, $postdata = "") 
 	{
-		if(is_string($headers))
-		{
+		if (is_string($headers)) {
 			$headers = array($headers);
 		}
-		if(function_exists('curl_version'))
-		{
+		if (!is_array($headers)) {
+			$headers = array();
+		}	
+		if (function_exists('curl_version')) {
 			$opts = array(
 				CURLOPT_URL => $url,
 				CURLOPT_RETURNTRANSFER => true,
@@ -232,15 +250,24 @@ class DefaultHttpClient implements HttpClient
 				CURLOPT_POSTFIELDS => $postdata,
 				CURLOPT_HTTPHEADER => $headers,
 			);
+			// Get header rows
+			$respheaders = array();
+			$opts[CURLOPT_HEADERFUNCTION] = function($curl, $hrow) use (&$respheaders) {
+				$len = strlen($hrow);
+				$hparts = explode(':', $hrow, 2);
+				if (count($hparts) < 2) {
+					return $len;
+				}
+				$respheaders[strtolower(trim($hparts[0]))][] = trim($hparts[1]);
+				return $len;
+			};
 			$curl = curl_init();
 			curl_setopt_array($curl, $opts);
 			$response = curl_exec($curl);
 			$httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 			$err = curl_error($curl);
 			curl_close($curl);
-		} 
-		else 
-		{
+		} else {
 			$opts = array('http' => array(
 				"method"  => $method,
 				"header"  => implode("\r\n", $headers),
@@ -249,28 +276,21 @@ class DefaultHttpClient implements HttpClient
 			);
 			$context = stream_context_create($opts);
 			$response = file_get_contents($url, false, $context);
+			// Get http status code
 			preg_match('/([0-9])\d+/', $http_response_header[0], $matches);
-			//print_r($http_response_header);
-			// Array
-			// (
-			// 	[0] => HTTP/1.0 200 OK
-			// 	[1] => Content-Type: application/json; charset=UTF-8
-			// 	[2] => Vary: X-Origin
-			// 	[3] => Vary: Referer
-			// 	[4] => Date: Mon, 06 Nov 2023 10:18:41 GMT
-			// 	[5] => Server: scaffolding on HTTPServer2
-			// 	[6] => Cache-Control: private
-			// 	[7] => X-XSS-Protection: 0
-			// 	[8] => X-Frame-Options: SAMEORIGIN
-			// 	[9] => X-Content-Type-Options: nosniff
-			// 	[10] => Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
-			// 	[11] => Accept-Ranges: none
-			// 	[12] => Vary: Origin,Accept-Encoding
-			// )
 			$httpcode = intval($matches[0]);
+			// Get header rows
+			$respheaders = array();
+			foreach($http_response_header as $hrow) {
+				$hparts = explode(':', $hrow, 2);
+				if (count($hparts) < 2) { 
+					continue;
+				}
+				$respheaders[strtolower(trim($hparts[0]))][] = trim($hparts[1]);
+			}
 			$err = ($response === false);
 		}
-		return array($response, $httpcode, $err);
+		return array($response, $httpcode, $respheaders, $err);
 	}
 }
 
