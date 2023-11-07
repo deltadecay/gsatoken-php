@@ -17,57 +17,55 @@ function base64url_decode($data)
 // The returned signature is raw bytes.
 function signJWT($data, $secretkey, $alg)
 {
-	if(strlen($alg) != 5) 
-	{
+	if (strlen($alg) != 5) {
 		throw new \Exception('alg should be five chars, eg. RS256');
 	}
 	$enc = substr($alg, 0, 2);
 	$len = substr($alg, 2);
 	
-	if($secretkey == null)
-	{
+	if ($secretkey == null) {
 		throw new \Exception('secretkey is null');
 	}
 
-	if(in_array($enc, array('RS', 'ES')))
-	{
-		if (!$key = openssl_pkey_get_private($secretkey))
-		{
+	if (in_array($enc, array('RS', 'ES'))) {
+		if (!$key = openssl_pkey_get_private($secretkey)) {
 			throw new \Exception('Failed to read secretkey');
 		}
 		$details = openssl_pkey_get_details($key);
 
-		if (isset($details['rsa']) && $enc != 'RS') 
-		{
+		if (isset($details['rsa']) && $enc != 'RS') {
 			throw new \Exception('Provided key is RSA but alg does not specify RS');
 		}
-		if (isset($details['ec']) && $enc != 'ES') 
-		{
+		if (isset($details['ec']) && $enc != 'ES') {
 			throw new \Exception('Provided key is ECDSA but alg does not specify ES');
 		}
 
 		$sign_algo = OPENSSL_ALGO_SHA256;
-		if($len == 384) $sign_algo = OPENSSL_ALGO_SHA384;
-		if($len == 512) $sign_algo = OPENSSL_ALGO_SHA512;
+		if ($len == 384) { 
+			$sign_algo = OPENSSL_ALGO_SHA384;
+		}
+		if ($len == 512) {
+			$sign_algo = OPENSSL_ALGO_SHA512;
+		}
 
-		if (!openssl_sign($data, $signature, $key, $sign_algo))
-		{
+		if (!openssl_sign($data, $signature, $key, $sign_algo)) {
 			throw new \Exception('Failed to sign JWT');
 		}
-		if(PHP_VERSION_ID < 80000) {
+		if (PHP_VERSION_ID < 80000) {
 			// Deprecated in PHP 8.0+ since they are no longer of type resource that need to be freed.
 			openssl_pkey_free($key);
 		}
 	}
-	else if($enc == 'HS')
-	{
+	elseif ($enc == 'HS') {
 		$sign_algo = 'sha256';
-		if($len == 384) $sign_algo = 'sha384';
-		if($len == 512) $sign_algo = 'sha512';
+		if ($len == 384) {
+			$sign_algo = 'sha384';
+		}
+		if ($len == 512) {
+			$sign_algo = 'sha512';
+		}
 		$signature = hash_hmac($sign_algo, $data, $secretkey, true);
-	}
-	else
-	{
+	} else {
 		throw new \Exception('Unsupported signing method. Supported HS, RS, ES with 256, 384, 512 hashing.');
 	}
 	return $signature;
