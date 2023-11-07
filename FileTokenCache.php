@@ -43,16 +43,12 @@ class FileTokenCache implements \GSAToken\TokenCache
 		if($this->cache_filename!=null && is_file($this->cache_filename))
 		{
 			$data = file_get_contents($this->cache_filename);
-			if($data !== FALSE)
-			{
+			if ($data !== FALSE) {
 				$data = $this->decrypt($data);
-				if($data !== FALSE) 
-				{
+				if ($data !== FALSE) {
 					$this->cached_token = json_decode($data, TRUE);
 				}	
-			}
-			else
-			{
+			} else {
 				$this->cached_token = null;
 			}
 		}
@@ -62,8 +58,7 @@ class FileTokenCache implements \GSAToken\TokenCache
 	public function save($token)
 	{
 		$this->cached_token = $token;
-		if($this->cache_filename != null && $token != null)
-		{
+		if ($this->cache_filename != null && $token != null) {
 			$data = json_encode($token);
 			$data = $this->encrypt($data);
 			file_put_contents($this->cache_filename, $data);
@@ -91,7 +86,7 @@ class FileTokenCache implements \GSAToken\TokenCache
 	}
 
 	private function decrypt($input)
-	{          
+	{
 		$bundle = base64_decode($input);
 		$method = "aes-256-cbc";    
 		$iv_length = openssl_cipher_iv_length($method);
@@ -103,8 +98,7 @@ class FileTokenCache implements \GSAToken\TokenCache
 		$data = openssl_decrypt($data_encrypted, $method, $this->enc_key, OPENSSL_RAW_DATA, $iv);
 		$mac_new = hash_hmac('sha512', $data_encrypted, $this->mac_key, TRUE);
 			
-		if (hash_equals($mac, $mac_new))
-		{
+		if (hash_equals($mac, $mac_new)) {
 			return $data;
 		}	
 		return false;
