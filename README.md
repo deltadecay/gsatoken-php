@@ -36,7 +36,9 @@ An included implementation in class **DefaultHttpClient** is used by default. It
 ```php
 interface HttpClient 
 {
-	// Should return array($responsebody, $httpcode, $responseheaders, $error)
+	// Perform a http request
+	// Should return an array with these fields
+	// array("body" => $response, "httpcode" => $httpcode, "headers" => $responseheaders, "error" => $error);
 	public function request($method, $url, $headers, $postdata);
 }
 ```
