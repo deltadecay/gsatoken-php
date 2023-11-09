@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('CURL_HTTP_VERSION_2_0')) {
+	define('CURL_HTTP_VERSION_2_0', 3);
+}
+
 // A very simple HttpClient that uses curl if available, otherwise file_get_contents
 class HttpClient 
 {
@@ -12,13 +16,14 @@ class HttpClient
 			$headers = array();
 		}	
 		if (function_exists('curl_version')) {
+			$hasHttp2 = curl_version()['features'] & CURL_HTTP_VERSION_2_0;
 			$opts = array(
 				CURLOPT_URL => $url,
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_ENCODING => "",
 				CURLOPT_MAXREDIRS => 10,
 				CURLOPT_TIMEOUT => 30,
-				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+				CURLOPT_HTTP_VERSION => $hasHttp2 ? CURL_HTTP_VERSION_2_0 : CURL_HTTP_VERSION_1_1,
 				CURLOPT_CUSTOMREQUEST => $method,
 				CURLOPT_POSTFIELDS => $postdata,
 				CURLOPT_HTTPHEADER => $headers,
@@ -45,6 +50,7 @@ class HttpClient
 				"method"  => $method,
 				"header"  => implode("\r\n", $headers),
 				"content" => $postdata,
+				"protocol_version" => "1.1",
 				)
 			);
 			$err = false;
