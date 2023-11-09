@@ -4,21 +4,34 @@
 require_once("GoogleServiceAccount.php");
 require_once("JWT.php");
 require_once("FileTokenCache.php");
+require_once("HttpClient.php");
 
 class JWTCreator implements \GSAToken\JWTFactory
 {
-    public function create($header, $claims, $secretkey)
-    {
-        return createJWT($header, $claims, $secretkey);
-    }
+	public function create($header, $claims, $secretkey)
+	{
+		return createJWT($header, $claims, $secretkey);
+	}
+}
+
+class CurlHttpClient implements \GSAToken\HttpClient
+{
+	protected $client = null;
+	public function __construct() 
+	{
+		$this->client = new HttpClient();
+	}
+	public function request($method, $url, $headers, $postdata) 
+	{
+		return $this->client->request($method, $url, $headers, $postdata);
+	}
 }
 
 
-$scopes = array("https://www.googleapis.com/auth/firebase.messaging");
+
 
 // Config file for a Google Service Account
 $configfile = __DIR__."/serviceaccount.json";
-
 // Name of a file where to store the cached token
 $cachefile = __DIR__."/accesstoken.cache";
 
@@ -32,8 +45,11 @@ $mac_key = base64_decode("V7oKzLdgWjHQftXs70sOgzXksuiwHPigf4cLE6qPdic+Y6zrR6pvzN
 $tokencache->setPassphrase($enc_key, $mac_key);
 $gsa->setTokenCache($tokencache);
 $gsa->setJWTFactory(new JWTCreator());
+$gsa->setHttpClient(new CurlHttpClient());
 
 $now = time();
+
+$scopes = array("https://www.googleapis.com/auth/firebase.messaging");
 $ret = $gsa->fetchAccessToken($scopes);
 $accesstoken = $ret['access_token'];
 $ret['expires_in'] = $ret['expires_at'] > $now ? $ret['expires_at'] - $now : 0;
@@ -42,10 +58,10 @@ print_r($ret);
 /*
 Array
 (
-    [access_token] => ya29.c.c0AY.....
-    [expires_in] => 3599
-    [token_type] => Bearer
-    [expires_at] => 1698841702
+	[access_token] => ya29.c.c0AY.....
+	[expires_in] => 3599
+	[token_type] => Bearer
+	[expires_at] => 1698841702
 )
 */
 
