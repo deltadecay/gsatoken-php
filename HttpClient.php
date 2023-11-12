@@ -51,6 +51,7 @@ class HttpClient
 				"header"  => implode("\r\n", $headers),
 				"content" => $postdata,
 				"protocol_version" => "1.1",
+				//"ignore_errors" => true,
 				)
 			);
 			$err = false;
