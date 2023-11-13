@@ -1,6 +1,6 @@
 <?php 
 
-function dotenv($envfile = __DIR__."/.env", $line_sep="\n")
+function dotenv($envfile = ".env", $line_sep="\n")
 {
     $contents = "$envfile";
     if(is_file($envfile)) {
