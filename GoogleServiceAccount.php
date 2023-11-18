@@ -184,7 +184,7 @@ class GoogleServiceAccount
 		$responseheaders = $response['headers'];
 		$err = $response['error'];
 
-		$retryAfterTs = $this->getRetryAfterTimestamp($responseheaders['retry-after']);
+		$retryAfterTs = $this->getRetryAfterTimestamp($responseheaders['retry-after'][0]);
 
 		$ret = false;
 		if (!$err) {
