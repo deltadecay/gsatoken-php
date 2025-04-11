@@ -20,10 +20,10 @@ interface JWTFactory
 
 class JWTCreator implements \GSAToken\JWTFactory
 {
-    public function create($header, $claims, $secretkey)
-    {
-        return createJWT($header, $claims, $secretkey);
-    }
+	public function create($header, $claims, $secretkey)
+	{
+		return createJWT($header, $claims, $secretkey);
+	}
 }
 ```
 

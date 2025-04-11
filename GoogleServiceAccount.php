@@ -206,16 +206,16 @@ class GoogleServiceAccount
 			}
 			$ret = $json;
 		} else {
-            $json = json_decode($responsebody, TRUE);
-            if ($json === null) {
-                $json = array();
-            }   
-            $json['httpcode'] = $httpcode;
-            $json['headers'] = $responseheaders;
-            if (!isset($json['error'])) {
-                $json['error'] = $err;
-            }
-            $ret = $json;
+			$json = json_decode($responsebody, TRUE);
+			if ($json === null) {
+				$json = array();
+			}   
+			$json['httpcode'] = $httpcode;
+			$json['headers'] = $responseheaders;
+			if (!isset($json['error'])) {
+				$json['error'] = $err;
+			}
+			$ret = $json;
 		}
 		return $ret;
 	}
