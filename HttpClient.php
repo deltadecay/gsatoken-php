@@ -80,19 +80,14 @@ class HttpClient
 			{
 				$err = error_get_last()['message'];
 			}
-			if (PHP_VERSION_ID >= 80400) 
+			// In php 8.5 the magic variable http_response_header is deprecated, 
+			// from 8.4 the function http_get_last_response_headers is equivalent 
+			if (function_exists('http_get_last_response_headers')) 
 			{
-				// Use function in 8.4 and http_response_header deprecated in 8.5
-				$http_last_response_header = http_get_last_response_headers();
-				if ($http_last_response_header === null) 
-				{
-					$http_last_response_header = [];
-				}
-			} 
-			else 
-			{
-				$http_last_response_header = $http_response_header;
+				$http_response_header = http_get_last_response_headers();
 			}
+			$http_last_response_header = $http_response_header;
+			
 			$httpcode = 0;
 			if (count($http_last_response_header) > 0)
 			{
